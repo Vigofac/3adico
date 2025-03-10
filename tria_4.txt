@@ -1,0 +1,102 @@
+import React, { useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { jsPDF } from "jspdf";
+
+const questions = [
+  { category: "Pensamiento Lógico", text: "Al fin del día, de la semana o de una actividad, hace revisión, evaluación de lo realizado." },
+  { category: "Pensamiento Lógico", text: "Al dialogar o discutir tiene buenas explicaciones, argumentos, sabes debatir." },
+  { category: "Pensamiento Lógico", text: "Sabe hablar frente a un grupo, domina las palabras con fluidez y corrección." },
+  { category: "Pensamiento Lógico", text: "Sabe determinar los pros y los contras de un problema, logra discernir y emitir juicios correctos." },
+  { category: "Pensamiento Lógico", text: "Cuando narra un hecho le detalla la información, le gusta dar todos los pormenores." },
+  { category: "Pensamiento Lógico", text: "Controla sus impulsos y se detiene a tiempo para pensar en las consecuencias antes de actuar." },
+  { category: "Pensamiento Lógico", text: "Antes de aceptar cualquier información como cierta, se dedica a recoger más datos y averiguar las fuentes." },
+  { category: "Pensamiento Lógico", text: "Duda de la información de la televisión, de autoridades, de la ciencia." },
+  { category: "Pensamiento Lógico", text: "Cuando trabaja o se comunica, usa los números, usa estadísticas, porcentajes." },
+  { category: "Pensamiento Operacional", text: "En su habitación propende por el orden, la organización." },
+  { category: "Pensamiento Operacional", text: "Al comprar o vender salen bien las cosas, obtiene ganancia." },
+  { category: "Pensamiento Operacional", text: "Existen habilidades manuales con agujas, martillo, jardinería o para arreglar cosas dañadas." },
+  { category: "Pensamiento Operacional", text: "Frente a una tarea difícil tiene la capacidad de concentración, de continuidad y sigue constante hasta terminarla." },
+  { category: "Pensamiento Operacional", text: "En la posición de jefe, sabe dividir las tareas, calcular tiempo para cada una de ellas, exige realizarlas." },
+  { category: "Pensamiento Operacional", text: "Tiene atracción por la aventura, tareas desconocidas, iniciar algo que nadie hizo antes." },
+  { category: "Pensamiento Operacional", text: "Logra transformar sus sueños e ideales, en cosas concretas." },
+  { category: "Pensamiento Operacional", text: "Se le facilita la manipulación de artefactos tecnológicos como celulares, iPad, computadoras." },
+  { category: "Pensamiento Operacional", text: "Es rápido en lo que hace, su tiempo rinde más que el de sus compañeros, termina bien y a tiempo todo lo que empezó." },
+  { category: "Pensamiento Emocional", text: "Tiene el hábito de pensar en el día de mañana, en el año próximo, en los próximos 10 años." },
+  { category: "Pensamiento Emocional", text: "Se detiene a ponerle atención a una puesta de sol, un pájaro, un paisaje." },
+  { category: "Pensamiento Emocional", text: "Le gusta innovar, cambiar la rutina de la vida, del ambiente, tiene soluciones creativas y originales." },
+  { category: "Pensamiento Emocional", text: "Cree que su cuerpo, energía, son parte de un todo mayor, de alguna fuerza superior, invisible, espiritual, eterna." },
+  { category: "Pensamiento Emocional", text: "Vive alegre, optimista y disfrutando de la vida a pesar de los problemas o dificultades." },
+  { category: "Pensamiento Emocional", text: "Tiene presentimientos, premoniciones, sueños que se materializan." },
+  { category: "Pensamiento Emocional", text: "En una relación afectiva entrega todo con romanticismo, compasión." },
+  { category: "Pensamiento Emocional", text: "Cuando habla gesticula, mueve el cuerpo, mira todas las personas." },
+  { category: "Pensamiento Emocional", text: "Puede imaginarse en los zapatos de otra persona y sentir como ella se siente." },
+];
+
+const categories = ["Pensamiento Lógico", "Pensamiento Operacional", "Pensamiento Emocional"];
+const colors = ["#0088FE", "#00C49F", "#FFBB28"];
+
+export default function TestInteractivo() {
+  const [responses, setResponses] = useState(Array(questions.length).fill(0));
+
+  const handleResponse = (index, value) => {
+    setResponses(prev => {
+      const newResponses = [...prev];
+      newResponses[index] = value;
+      return newResponses;
+    });
+  };
+
+  const averages = useMemo(() => categories.map(category => {
+    const filtered = responses.filter((_, i) => questions[i].category === category);
+    return filtered.length > 0 ? Math.round((filtered.reduce((sum, val) => sum + val, 0) / filtered.length) * 100 / 5) : 0;
+  }), [responses]);
+
+  const data = categories.map((category, i) => ({ name: category, value: averages[i], fill: colors[i] }));
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.text("Resultados de Test Interactivo", 10, 10);
+    categories.forEach((category, i) => {
+      doc.text(`${category}: ${averages[i]}%`, 10, 20 + i * 10);
+    });
+    doc.save("test_resultados.pdf");
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      <h1 className="text-2xl font-bold text-center">Estructura de mi aprendizaje</h1>
+      {questions.map((q, i) => (
+        <Card key={i}>
+          <CardContent className="p-4">
+            <p>{q.text}</p>
+            {[1, 2, 3, 4, 5].map(value => (
+              <Button 
+                key={value} 
+                className={`m-1 ${responses[i] === value ? 'bg-blue-500 text-white' : ''}`} 
+                onClick={() => handleResponse(i, value)}
+                aria-label={`Respuesta ${value} para la pregunta ${i + 1}`}
+                role="button"
+              >
+                {value}
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+      ))}
+      <div className="flex justify-between items-center">
+        <ResponsiveContainer width="50%" height={300}>
+          <PieChart>
+            <Pie data={data} dataKey="value" cx="50%" cy="50%" outerRadius={80} paddingAngle={5} label={({ value }) => `${value}%`}>
+              {data.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
+            </Pie>
+            <Tooltip formatter={value => `${value}%`} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+        <Button onClick={generatePDF}>Descargar PDF</Button>
+      </div>
+    </div>
+  );
+}
